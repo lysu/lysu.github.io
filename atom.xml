@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[lysu's note]]></title>
+  <title><![CDATA[shoyu of lysu]]></title>
   <link href="http://lysu.github.io/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
-  <updated>2014-06-08T01:53:42+08:00</updated>
+  <updated>2014-06-08T12:49:33+08:00</updated>
   <id>http://lysu.github.io/</id>
   <author>
     <name><![CDATA[lysu]]></name>
