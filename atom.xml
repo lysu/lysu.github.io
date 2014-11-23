@@ -4,7 +4,7 @@
   <title><![CDATA[shoyu of lysu]]></title>
   <link href="http://lysu.github.io/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
-  <updated>2014-11-24T02:04:21+08:00</updated>
+  <updated>2014-11-24T02:05:40+08:00</updated>
   <id>http://lysu.github.io/</id>
   <author>
     <name><![CDATA[lysu]]></name>
@@ -57,6 +57,8 @@
 <p>set flag <code>-XX:ParallelGCThreads=X</code> will effects the number of threads used for young generation collect and stop-world-phase of old generation. Using more threads will lead to shortern stop time, it&rsquo;s take more CPU usage in consequence.</p>
 
 <h3>Attention for CMS</h3>
+
+<hr />
 
 <h4>1. minor gc</h4>
 
