@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[shoyu of lysu]]></title>
-  <link href="http://lysu.github.io/atom.xml" rel="self"/>
+  <title><![CDATA[Category: Jvm | shoyu of lysu]]></title>
+  <link href="http://lysu.github.io/blog/categories/jvm/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
   <updated>2014-11-24T01:43:30+08:00</updated>
   <id>http://lysu.github.io/</id>
