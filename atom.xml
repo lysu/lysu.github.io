@@ -4,7 +4,7 @@
   <title><![CDATA[shoyu of lysu]]></title>
   <link href="http://lysu.github.io/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
-  <updated>2014-06-08T12:49:33+08:00</updated>
+  <updated>2014-11-24T01:39:14+08:00</updated>
   <id>http://lysu.github.io/</id>
   <author>
     <name><![CDATA[lysu]]></name>
@@ -12,5 +12,114 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Tunning CMS GC]]></title>
+    <link href="http://lysu.github.io/blog/2014/11/23/tunning-cms-gc/"/>
+    <updated>2014-11-23T21:56:35+08:00</updated>
+    <id>http://lysu.github.io/blog/2014/11/23/tunning-cms-gc</id>
+    <content type="html"><![CDATA[<h3>Introduce to CMS Collector</h3>
+
+<hr />
+
+<p>&lsquo;CMS&rsquo;(Concurrent Mark-Sweep) is a gc algorithm that widely used by &lsquo;reponse-time critical&rsquo; application.</p>
+
+<p>To young generation, minor gc, CMS will stop all application threads too, but &lsquo;ParNew&rsquo; performs scan in multi-threads and scan young generation is quick, because it&rsquo;s small.</p>
+
+<p>To old generation, instead of stopping the application threads during full gc, it take more background threads to periodically scan old generation. application threads only pause when it is realy nesessary. so it&rsquo;s overall pause time is mush less than collector like &lsquo;thoughput collector&rsquo;.</p>
+
+<p>The trade-off is CMS will take more CPU usage to drive scan threads. In addition, background scan don&rsquo;t compact old generation, so there will be many fragments in old generation. When CPU is shortage or too fragemented to allocate new object, CMS will trigger full gc to resolve the problem.</p>
+
+<p>CMS is enabled by <code>-XX:+UseConcMarkSweepGC -XX:+UseParNewGC</code>.</p>
+
+<h3>Common attention</h3>
+
+<hr />
+
+<h4>1. Never specify a heap that is larger than physical memory</h4>
+
+<p>it will make system do swap to hard disk, it&rsquo;s very very slow.</p>
+
+<h4>2. Set both initial and max heap size to same value</h4>
+
+<p>it will reduce the heap resize operation, although it will hold bigger heap for it&rsquo;s real needing.</p>
+
+<h4>3. Make a right size Generations</h4>
+
+<p>Heap is divided to many regions as we know. The Larger young generation used, the less chances young gc will occur(although slower). The smaller old generation used more full gcs will take place.</p>
+
+<h4>4. Make Perm Generation doesn&rsquo;t full</h4>
+
+<p>Resizing perm-gen will require a full-gc which is expensive.</p>
+
+<h4>5. Control gc threads number</h4>
+
+<p>set flag <code>-XX:ParallelGCThreads=X</code> will effects the number of threads used for young generation collect and stop-world-phase of old generation. Using more threads will lead to shortern stop time, it&rsquo;s take more CPU usage in consequence.</p>
+
+<h3>Attention for CMS</h3>
+
+<h4>1. minor gc</h4>
+
+<p>The bigger young generation, the less gc will occur. The bigger young generation, the longer GC cycles will be take.</p>
+
+<p>Survivor size and tenuring</p>
+
+<p>TLABS..todo.</p>
+
+<h4>2. concurrent cycle detail</h4>
+
+<p>Concurrent cycle will be trigger when it&rsquo;s sufficiently full.</p>
+
+<p>It starts with <code>initial mark phase</code>, which stop application threads to find GC root object in heap.</p>
+
+<p>The next is <code>mark phase</code> that will not stop application and run conncurrent with application</p>
+
+<p>Then <code>preclean phase</code> will concurrent running too, then <code>abortable preclean phase</code> will be taken to wait until the young generation is about 50% full to reduce the posibility for ygc occurs before remark.</p>
+
+<p>Then <code>remark phase</code> will stop application threads again.</p>
+
+<p>The <code>sweep phase</code> will swap concurrently.</p>
+
+<p>Concurrent cycle doesn&rsquo;t collect young generation directly, but it will have at least one ygc because of abortable preclean phase.</p>
+
+<h4>3. CMS failure</h4>
+
+<h5>a. concurrent mode failure</h5>
+
+<p>When ygc occurs and no enough room in old generaition for promoted objects. CMS will trigger a full gc.</p>
+
+<h5>b. promotion fail for too fragements</h5>
+
+<p>When ygc occur, but old-gen is too fragements for promented objects. in the middle of ygc(ParNew) will collect and compact entrie old generation, It will take much time then concurrent mode failure, because compact is expensive.</p>
+
+<h5>c. full gc without concurrent failure</h5>
+
+<p>Normally, CMS will never meet full gc, expect concurrent failure or too fragements, but when perm-gen full, will take full gc, too. so take care of PerGen.</p>
+
+<h5>d. a race</h5>
+
+<p>When old-gen was filled for <code>CMSInitiatingOccupancyFraction</code>(default 70%) percent, concurrent cycle start a race, CMS must complete scan and free object befor remainder(100% &ndash; CMSInitiatingOccupancyFraction) be filled up. If not will meet a concurrent mode failure..</p>
+
+<h4>4. Solve concurrent failure problem</h4>
+
+<h5>a. run concurrent cycle more often</h5>
+
+<p>Set <code>-XX:+UseCMSInitiatingOccupancyOnly</code> and <code>-XX:CMSInitiatingOccupancyFraction=N</code> will control the time for cycle start.</p>
+
+<p>Small CMSInitiatingOccupancyFraction value will let cycle start sooner. But too small value will let concurrent cycle consume much CPU time, and start time become uncontrol when CPU resource is shortage; and so much concurrent cycle may take overall pause time increased.</p>
+
+<h5>b. run concurrent cycle more quick</h5>
+
+<p>Set <code>-XX:ConcGCThreads=N</code> will control the threads to run cycle. the more threads the quick cycle will have, as well as more CPU usage.</p>
+
+<p>If concurrent mode failure doesn&rsquo;t often take, set less value will save our CPU resouce.</p>
+
+<h4>5. CMS PermGen</h4>
+
+<p>PermGen will not be collect by default when using CMS.</p>
+
+<p>By set <code>-XX:CMSPermGenSweepingEnable</code> and <code>-XX:CMSClassUnloadingEnable</code> will let cms threads to collect PermGen and free class metadata.</p>
+]]></content>
+  </entry>
   
 </feed>
