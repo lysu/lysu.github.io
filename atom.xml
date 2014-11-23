@@ -4,7 +4,7 @@
   <title><![CDATA[shoyu of lysu]]></title>
   <link href="http://lysu.github.io/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
-  <updated>2014-11-24T01:39:14+08:00</updated>
+  <updated>2014-11-24T01:40:36+08:00</updated>
   <id>http://lysu.github.io/</id>
   <author>
     <name><![CDATA[lysu]]></name>
@@ -119,6 +119,8 @@
 <p>PermGen will not be collect by default when using CMS.</p>
 
 <p>By set <code>-XX:CMSPermGenSweepingEnable</code> and <code>-XX:CMSClassUnloadingEnable</code> will let cms threads to collect PermGen and free class metadata.</p>
+
+<h4>5. Use G1</h4>
 ]]></content>
   </entry>
   
