@@ -100,7 +100,7 @@
 
 <p>To young generation, minor gc, CMS will stop all application threads too, but &lsquo;ParNew&rsquo; performs scan in multi-threads and scan young generation is quick, because it&rsquo;s small.</p>
 
-<p>To old generation, instead of stopping the application threads during full gc, it take more background threads to periodically scan old generation. application threads only pause when it is realy nesessary. so it&rsquo;s overall pause time is mush less than collector like &lsquo;thoughput collector&rsquo;.</p>
+<p>To old generation, instead of stopping the application threads during full gc, it take more background threads to periodically scan old generation. application threads only pause when it is realy nesessary. so its overall pause time is mush less than collector like &lsquo;thoughput collector&rsquo;.</p>
 
 <p>The trade-off is CMS will take more CPU usage to drive scan threads. In addition, background scan don&rsquo;t compact old generation, so there will be many fragments in old generation. When CPU is shortage or too fragemented to allocate new object, CMS will trigger full gc to resolve the problem.</p>
 
@@ -194,7 +194,9 @@
 
 <p>By set <code>-XX:CMSPermGenSweepingEnable</code> and <code>-XX:CMSClassUnloadingEnable</code> will let cms threads to collect PermGen and free class metadata.</p>
 
-<h4>5. Use G1</h4>
+<h4>6. Use G1</h4>
+
+<p>If u are using big heap and fragement problem disturb u, G1 is valuable to explore.</p>
 </div>
 
 
