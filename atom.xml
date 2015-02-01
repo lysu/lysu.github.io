@@ -4,7 +4,7 @@
   <title><![CDATA[shoyu of lysu]]></title>
   <link href="http://lysu.github.io/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
-  <updated>2014-11-24T02:05:40+08:00</updated>
+  <updated>2015-02-02T01:27:37+08:00</updated>
   <id>http://lysu.github.io/</id>
   <author>
     <name><![CDATA[lysu]]></name>
@@ -12,6 +12,78 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[How to Deal With Non-heap or Native Memory Leak]]></title>
+    <link href="http://lysu.github.io/blog/2015/02/02/how-to-deal-with-non-heap-or-native-memory-leak/"/>
+    <updated>2015-02-02T00:07:15+08:00</updated>
+    <id>http://lysu.github.io/blog/2015/02/02/how-to-deal-with-non-heap-or-native-memory-leak</id>
+    <content type="html"><![CDATA[<h3>when question occur out of heap</h3>
+
+<hr />
+
+<p>This week, I meet two very strange memory problems. Althought they are in different system, they have the same appearance &mdash;&ndash; Java process use much more memory over that JVM option setted.(e.g. Jvm option use 1.5G, but in <code>top</code> command, java consume 2.9G memory).</p>
+
+<h3>direct buffer memory</h3>
+
+<hr />
+
+<p>First system was a data-transfer one. It uses Netty heavily. When get the Heap dump we see many DirectByteBuffer objects, it&rsquo;s one of signals that we have direct buffer memory problem&hellip;then we use java.nio.Bits(<a href="http://stackoverflow.com/questions/3908520/looking-up-how-much-direct-buffer-memory-is-available-to-java">see this</a>) to confirm that direct buffer memory increase quickly when many request came.</p>
+
+<p>At last, we found that netty sender product much requst that over receiver&rsquo;s ability. So, we recheck our netty configuaration, and set <code>WATER_MARK</code> option and check <code>channel.isWritable</code> before write data to confirm that Netty has avalible to handle that request, if not we will try it later. Then direct buffer memory is under our control.</p>
+
+<h3>native memory</h3>
+
+<hr />
+
+<p>The other system was a Lib-scan one. It will scan many <code>.jar</code> file every day.</p>
+
+<p>At first, we try to dump heap many times, but we can not found any footmark in heap dump.</p>
+
+<p>So, we change tool and use <code>pmap -x [pid]</code> and <code>cat /proc/[pid]/smaps</code> to see java memory usage.</p>
+
+<p>First, we see find big <code>anon</code> blocks using 65500+ memory, like this..</p>
+
+<pre><code>00007f8b00000000   65512   40148   40148 rwx--    [ anon ]
+00007f8b03ffa000      24       0       0 -----    [ anon ]
+00007f8b04000000   65520   59816   59816 rwx--    [ anon ]
+00007f8b07ffc000      16       0       0 -----    [ anon ]
+</code></pre>
+
+<p>Then we using <code>gdb</code> to watch the content of these blocks</p>
+
+<pre><code>gdp -pid [pid]
+
+dump memory mem.bin 0x00007f8b00000000 0x00007f8b00000000+65512
+</code></pre>
+
+<p>Then let it visuable</p>
+
+<pre><code>cat mem.bin | strings
+</code></pre>
+
+<p>we found the content is <code>MANIFEST.MD</code> file.. at this time, we start to suspect jar..</p>
+
+<pre><code>pmap -x [pid] | grep '.jar' | sort -k6 | uniq -c
+</code></pre>
+
+<p>After do some statistics,  we found that many scanned jar file using memory more then once and never give back it&hellip;It&rsquo;s problem.</p>
+
+<p>Then open JVM code &mdash; <code>jdk/src/share/native/java/util/zip/zip_util.c</code> and <code>ZipFile.c</code> will found ZipFile/JarFile will use <code>mmap</code> and only free then when <code>close()</code> be called..</p>
+
+<p>So, after recheck and fix unclosed <code>ZipFile/JarFile</code>.. The problem was solved.</p>
+
+<h3>Summary</h3>
+
+<hr />
+
+<p>Using heap dump, we can find java heap problem, but Java and Java-Libary also have chance to non-heap memory leaked.</p>
+
+<p>When use nio-libary, we must take care the direct memory usage, using libary carefully, and better let <code>java.nio.Bits</code> be monited(also this way is trick.)</p>
+
+<p>In addition to <code>nio</code> problem, mis-used JNI api also lead the non-heap memory leak, too. We should try <code>pmap or /proc/[pid]/smaps</code> to found which jar/lib/stack/file might using much memory..then use <code>gdb</code> to watch content of blocks to help our analysis.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Tunning CMS GC]]></title>
