@@ -119,7 +119,7 @@
 
 <p>So, we change tool and use <code>pmap -x [pid]</code> and <code>cat /proc/[pid]/smaps</code> to see java memory usage.</p>
 
-<p>First, we see find big <code>anon</code> blocks using 65500+ memory, like this..</p>
+<p>First, we see find many big <code>anon</code> blocks using 65500+ memory, like this..</p>
 
 <pre><code>00007f8b00000000   65512   40148   40148 rwx--    [ anon ]
 00007f8b03ffa000      24       0       0 -----    [ anon ]
@@ -127,7 +127,7 @@
 00007f8b07ffc000      16       0       0 -----    [ anon ]
 </code></pre>
 
-<p>Then we using <code>gdb</code> to watch the content of these blocks</p>
+<p>Then we using <code>gdb</code> to dump the content of these blocks</p>
 
 <pre><code>gdp -pid [pid]
 
@@ -139,12 +139,12 @@ dump memory mem.bin 0x00007f8b00000000 0x00007f8b00000000+65512
 <pre><code>cat mem.bin | strings
 </code></pre>
 
-<p>we found the content is <code>MANIFEST.MD</code> file.. at this time, we start to suspect jar..</p>
+<p>It&rsquo;s suprise that the block content is <code>MANIFEST.MD</code> file.. at this time, we start to suspect jar..</p>
 
 <pre><code>pmap -x [pid] | grep '.jar' | sort -k6 | uniq -c
 </code></pre>
 
-<p>After do some statistics,  we found that many scanned jar file using memory more then once and never give back it&hellip;It&rsquo;s problem.</p>
+<p>After do some statistics,  we found that many scanned jar file using memory more then once and never give back it&hellip;It&rsquo;s the problem.</p>
 
 <p>Then open JVM code &mdash; <code>jdk/src/share/native/java/util/zip/zip_util.c</code> and <code>ZipFile.c</code> will found ZipFile/JarFile will use <code>mmap</code> and only free then when <code>close()</code> be called..</p>
 
@@ -154,9 +154,9 @@ dump memory mem.bin 0x00007f8b00000000 0x00007f8b00000000+65512
 
 <hr />
 
-<p>Using heap dump, we can find java heap problem, but Java and Java-Libary also have chance to non-heap memory leaked.</p>
+<p>Using heap dump, we can find java heap problem, but Java and Java-Libary also have chance to make non-heap memory leak.</p>
 
-<p>When use nio-libary, we must take care the direct memory usage, using libary carefully, and better let <code>java.nio.Bits</code> be monited(also this way is trick.)</p>
+<p>When use nio-libary, we must take care the direct memory usage, using nio libary carefully, and should better let <code>java.nio.Bits</code> be monited(also this way is trick.)</p>
 
 <p>In addition to <code>nio</code> problem, mis-used JNI api also lead the non-heap memory leak, too. We should try <code>pmap or /proc/[pid]/smaps</code> to found which jar/lib/stack/file might using much memory..then use <code>gdb</code> to watch content of blocks to help our analysis.</p>
 </div>
