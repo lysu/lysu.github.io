@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Jvm | shoyu of lysu]]></title>
   <link href="http://lysu.github.io/blog/categories/jvm/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
-  <updated>2015-02-02T01:54:01+08:00</updated>
+  <updated>2015-02-02T23:23:10+08:00</updated>
   <id>http://lysu.github.io/</id>
   <author>
     <name><![CDATA[lysu]]></name>
@@ -72,6 +72,10 @@ dump memory mem.bin 0x00007f8b00000000 0x00007f8b00000000+65512
 <p>Then open JVM code &mdash; <code>jdk/src/share/native/java/util/zip/zip_util.c</code> and <code>ZipFile.c</code> will found ZipFile/JarFile will use <code>mmap</code> and only free then when <code>close()</code> be called..</p>
 
 <p>So, after recheck and fix unclosed <code>ZipFile/JarFile</code>.. The problem was solved.</p>
+
+<p>UPDATE: except un-close Jar file, before jdk1.7 URLClassLoader close JarFile lazy also lead mmap leak&hellip; we can use 1.7+ or hack it like this <a href="http://snipplr.com/view/24224/class-loader-which-close-opened-jar-files/">http://snipplr.com/view/24224/class-loader-which-close-opened-jar-files/</a> or try System.gc</p>
+
+<p>UPDATE: the other accessible way may be let JarFile/ZipFile doesn&rsquo;t use mmap&hellip;we can use jvm opt <code>-Dsun.zip.disableMemoryMapping</code> to disable it.<a href="http://www.oracle.com/us/technologies/java/overview-156328.html">http://www.oracle.com/us/technologies/java/overview-156328.html</a></p>
 
 <h3>Summary</h3>
 
