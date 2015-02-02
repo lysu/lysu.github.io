@@ -55,6 +55,9 @@ Then open JVM code -- `jdk/src/share/native/java/util/zip/zip_util.c` and `ZipFi
 
 So, after recheck and fix unclosed `ZipFile/JarFile`.. The problem was solved.
 
+UPDATE: except un-close Jar file, before jdk1.7 URLClassLoader close JarFile lazy also lead mmap leak... we can use 1.7+ or hack it like this http://snipplr.com/view/24224/class-loader-which-close-opened-jar-files/ or try System.gc
+
+UPDATE: the other accessible way may be let JarFile/ZipFile doesn't use mmap...we can use jvm opt `-Dsun.zip.disableMemoryMapping` to disable it.[http://www.oracle.com/us/technologies/java/overview-156328.html](http://www.oracle.com/us/technologies/java/overview-156328.html)
 
 ### Summary
 ---
