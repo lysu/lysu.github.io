@@ -9,7 +9,7 @@
   <meta name="author" content="lysu">
 
   
-  <meta name="description" content="when question occur out of heap This week, I meet two very strange memory problems. Althought they are in different system, they have the same &hellip;">
+  <meta name="description" content="0. The purpose There are too many tools for us to track the system problem. It&rsquo;s just like a detector&rsquo;s work, at first, we must find & &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -63,6 +63,408 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/03/07/Troubleshooting-tools/">Troubleshooting Tools</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-03-07T16:05:00+08:00" pubdate data-updated="true">Mar 7<span>th</span>, 2015</time>
+        
+           | <a href="/blog/2015/03/07/Troubleshooting-tools/#disqus_thread"
+             data-disqus-identifier="http://lysu.github.io/blog/2015/03/07/Troubleshooting-tools/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>0. The purpose</h3>
+
+<hr />
+
+<p>There are too many tools for us to track the system problem. It&rsquo;s just like a detector&rsquo;s work, at first, we must find &lsquo;evidence&rsquo; as quickly as possible. Beside the awareness, using the right tools for problem is vital. Let&rsquo;s record it in here.</p>
+
+<h3>1. Core dump</h3>
+
+<hr />
+
+<h4>when</h4>
+
+<p>First &lsquo;tool&rsquo; is not a tools, it&rsquo;s just a snapshot file that record memory/processor/register and so on when our program crashed as OS reason. Just like javadump file,  it&rsquo;s very useful for us diagnose and debug the problem.</p>
+
+<p>When can we get a core dump file?</p>
+
+<p>Linux use signal as one kind of asynchronous event handling mechanism, each signal has its default action, like Ingore (ignore signal ), Stop(suspend process), Terminate (terminate process), and Core (termination and core dump) etc..</p>
+
+<p>So when <code>Core</code> action is triggered, linux will generate core dump.</p>
+
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Action</th>
+<th>Addition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIGQUIT</td>
+<td> CORE </td>
+<td> Quit from keyboard, e.g. <code>"Ctrl+\"</code></td>
+</tr>
+<tr>
+<td>SIGILL</td>
+<td> CORE </td>
+<td> Illegal Instruction, e.g. <code>kill -ll $$</code></td>
+</tr>
+<tr>
+<td>SIGABRT</td>
+<td>CORE</td>
+<td>Abort signal from abort </td>
+</tr>
+<tr>
+<td>SIGSEGV</td>
+<td>CORE</td>
+<td>Invalid memory reference, e.g. write to null pointer memory area or overflowstack</td>
+</tr>
+<tr>
+<td>SIGTRAP</td>
+<td>CORE</td>
+<td>Trace/breakpoint trap </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>For full sigal list, plean see <a href="http://man7.org/linux/man-pages/man7/signal.7.html">signal manual page</a>. And signal we show in core dump to help using recognize the problem type.</p>
+
+<h4>how</h4>
+
+<h5>I. enable configuation</h5>
+
+<p>En~&hellip;But we often hear that &lsquo;I could not find any core dump when it crashed&rsquo;.</p>
+
+<p>There some <code>switcher</code> to let system generate a core dump.</p>
+
+<p>Enter <code>ulimit -c</code> command and get the result value as <code>0</code>, it indicate that core dump is disabled by default, it would not generate core dump file.
+We can use the command <code>ulimit -c unlimited</code> to enable the core dump function, and does not limit the core dump file size;</p>
+
+<p>Using the above command will only effective for terminal current environment， if you want to be permanent, you can modify the file /etc/security/limits.conf  file</p>
+
+<pre><code>#/etc/security/limits.conf
+#Each line describes a limit for a user in the form:
+#&lt;domain&gt;      &lt;type&gt;  &lt;item&gt;         &lt;value&gt;
+      *         soft     core        unlimited
+</code></pre>
+
+<h5>II. dump file path</h5>
+
+<ul>
+<li>The default generated core file is saved in the executable file’s directory, file name is core.</li>
+<li>Using <code>sysctl-a |grep core</code>, and <code>kernel.core_pattern</code> will indiate the dump file path, and <code>kernel.core_uses_pid</code> using <code>1</code> to let core file contains process id</li>
+<li>To modify it using <code>sysctl -w</code> or <code>sysctl -p</code> as sudoer.</li>
+</ul>
+
+
+<h5>III. debug core file</h5>
+
+<p>use the command <code>gdb [program] [coredump]</code> to view the core file</p>
+
+<pre><code>vagrant@vagrant-ubuntu-trusty:~/test$ gdb seg core
+GNU gdb (Ubuntu 7.8-1ubuntu4) 7.8.0.20141001-cvs
+Copyright (C) 2014 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+&lt;http://www.gnu.org/software/gdb/bugs/&gt;.
+Find the GDB manual and other documentation resources online at:
+&lt;http://www.gnu.org/software/gdb/documentation/&gt;.
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from seg...(no debugging symbols found)...done.
+[New LWP 12887]
+Core was generated by `./seg'.
+Program terminated with signal SIGSEGV, Segmentation fault.
+#0  0x0000000000400506 in main ()
+(gdb) where
+#0  0x0000000000400506 in main ()
+(gdb) info frame
+Stack level 0, frame at 0x7fff961538c0:
+ rip = 0x400506 in main; saved rip = 0x7f17f9d0eec5
+ Arglist at 0x7fff961538b0, args:
+ Locals at 0x7fff961538b0, Previous frame's sp is 0x7fff961538c0
+ Saved registers:
+  rbp at 0x7fff961538b0, rip at 0x7fff961538b8
+(gdb) Quit
+</code></pre>
+
+<h5>IV. generate dump with gdb</h5>
+
+<p>we can use <code>gdb</code> to generate a core dump easily..</p>
+
+<p>first, connect to java pid</p>
+
+<pre><code>gdb -q --pid=xxx
+</code></pre>
+
+<p>then</p>
+
+<pre><code>(gdb) generate-core-file     
+</code></pre>
+
+<p>at last, don&rsquo;t forget to detail from process</p>
+
+<pre><code>(gdb) detach 
+</code></pre>
+
+<h5>V. for java process</h5>
+
+<p>if core dump is come from java process</p>
+
+<p>we can transform it to java heap file use <code>jmap</code></p>
+
+<pre><code>jmap -dump:format=b,file=heap.hprof $JAVA_HOME/java core.xxx
+</code></pre>
+
+<p>then use tools like <code>MAT</code> to analysis memory.</p>
+
+<p>or we can use <code>jstack</code> to see java stack</p>
+
+<pre><code>jstack -m $JAVA_HOME/bin/java core.xxx
+</code></pre>
+
+<p>(ps: jstack maybe meet a <a href="http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7133122">bug</a> )</p>
+
+<p>Also see</p>
+
+<ul>
+<li><a href="http://www.itsprite.com/how-to-enablegeneratedebug-core-dump-in-linux/">How to: Enable/Generate/Debug Core Dump In Linux?</a></li>
+<li><a href="http://www.itsprite.com/linux-core-file-configuration/">Linux Core File Configuration</a></li>
+</ul>
+
+
+<h3>2. dmesg/messages</h3>
+
+<hr />
+
+<h4>when</h4>
+
+<p>When process crashed, we need to confirm is it killed by oom-killer?</p>
+
+<h4>how</h4>
+
+<p>We can use <code>dmesg</code> and <code>/var/adm/messages.*</code> to see kernel messages.(dmesg for kernel ring buffer, and messages for all)</p>
+
+<p>expect boot info&hellip;</p>
+
+<p>oom-killer will in it, we can use</p>
+
+<pre><code>sudo dmesg | grep java | grep -i oom-killer
+</code></pre>
+
+<p>to see confirm that is program killed by oom-killer.</p>
+
+<p>Also see</p>
+
+<ul>
+<li><a href="http://blog.chinaunix.net/uid-29242873-id-3942763.html">Linux内核OOM机制的详细分析</a></li>
+<li><a href="http://unix.stackexchange.com/questions/35851/whats-the-difference-of-dmesg-output-and-var-log-messages">What&rsquo;s the difference of dmesg output and /var/log/messages?</a></li>
+<li><a href="http://lysu.github.io/blog/2015/02/02/how-to-deal-with-non-heap-or-native-memory-leak/">How to Deal With Non-heap or Native Memory Leak</a></li>
+</ul>
+
+
+<h3>3. strace</h3>
+
+<hr />
+
+<h4>when</h4>
+
+<p>&ldquo;strace – trace system calls and signals&rdquo;</p>
+
+<p>En~&hellip;we can use <code>strace</code> to see system call and signals in program.</p>
+
+<p>we can use <code>strace</code> to see param or return value of system call and signals.</p>
+
+<h4>how</h4>
+
+<h5>I. follow call and signals</h5>
+
+<p>use strace command to see system call</p>
+
+<pre><code>strace ./[program]
+</code></pre>
+
+<p>we will see system call param and return value and signals</p>
+
+<pre><code>mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f90c0139000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f90c0137000
+arch_prctl(ARCH_SET_FS, 0x7f90c0137740) = 0
+mprotect(0x7f90bff19000, 16384, PROT_READ) = 0
+mprotect(0x600000, 4096, PROT_READ)     = 0
+mprotect(0x7f90c0146000, 4096, PROT_READ) = 0
+munmap(0x7f90c013a000, 39504)           = 0
+fstat(0, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 1), ...}) = 0
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f90c0143000
+read(0, 0x7f90c0143000, 1024)           = ? ERESTARTSYS (To be restarted if SA_RESTART is set)
+--- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=13689, si_uid=1000} ---
++++ killed by SIGTERM +++
+</code></pre>
+
+<h5>II. count system call</h5>
+
+<pre><code>strace -c ./[program]
+</code></pre>
+
+<p>we will see count as this</p>
+
+<pre><code>vagrant@vagrant-ubuntu-trusty:~/test$ strace -c ./test_strace
+^CProcess 13742 detached
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 32.09    0.000060           8         8           mmap
+ 23.53    0.000044          15         3           fstat
+ 14.44    0.000027           7         4           mprotect
+  9.63    0.000018          18         1           munmap
+  8.56    0.000016           8         2           open
+  6.95    0.000013           4         3         3 access
+  1.60    0.000003           3         1           read
+  1.07    0.000002           1         2           close
+  1.07    0.000002           2         1           execve
+  0.53    0.000001           1         1           brk
+  0.53    0.000001           1         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.000187                    27         3 total        
+</code></pre>
+
+<h5>III. other options</h5>
+
+<table>
+<thead>
+<tr>
+<th>option    </th>
+<th> effect </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-o </td>
+<td> output result to file</td>
+</tr>
+<tr>
+<td>-T </td>
+<td> track the system call time</td>
+</tr>
+<tr>
+<td>-p </td>
+<td> trace a running procee, using <code>-p [pid]</code></td>
+</tr>
+<tr>
+<td>-e </td>
+<td> A qualifying expression which modifies which events to trace or how to trace them, e.g. <code>-e trace=signal</code> to only trace signal, or <code>-e write</code> write IO operation.</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>Also see</p>
+
+<ul>
+<li><a href="http://linux.die.net/man/1/strace">strace &ndash; Linux man page</a></li>
+<li><a href="http://www.ibm.com/developerworks/aix/library/au-unix-strace.html">Fun with strace and the GDB Debugger</a></li>
+<li><a href="http://www.slideshare.net/jamesgolick/how-to-debug-anything">How to Debug Anything</a></li>
+</ul>
+
+
+<h3>4. ulimit</h3>
+
+<hr />
+
+<h3>when</h3>
+
+<p>In linux, every process has its resource limit, like sub-process number, open file number, dump file size, etc..</p>
+
+<p>If our process more than its max value will lead a crash.</p>
+
+<h3>how</h3>
+
+<p>Limit is in resource level, but using count is in user level.</p>
+
+<p>so limit like &lsquo;file number&rsquo; will use number that AProc open file number plus BProc open file number to check is over limit.</p>
+
+<p>This is the reason why some software like &lsquo;apache&rsquo; using standalone user to run it..</p>
+
+<p>To see process limit, use</p>
+
+<pre><code>cat /proc/[pid]/limits
+</code></pre>
+
+<p>what the limit value come from?</p>
+
+<ul>
+<li>init proc: set by kernal</li>
+<li>system service: set by <code>setrlimit</code></li>
+<li>shell proc: per login use <code>/etc/security/limits.conf</code> or set by pre <code>ulimit -Sx</code> command</li>
+<li>shell executed: inherite from shell process</li>
+</ul>
+
+
+<p>To modify process limit..(only soft limit we can modify)</p>
+
+<p>Use <code>ulimit</code> we can modify shell process limit and continue process forked from shell.</p>
+
+<p>Use <code>echo -n \"Max processes=xx:yy\" &gt;/proc/&lt;pid&gt;/limits</code></p>
+
+<p>we can modify limit for running process(need root)</p>
+
+<p>Also see:</p>
+
+<ul>
+<li><a href="http://lwn.net/Articles/475406/">CGroup Task Counter</a></li>
+</ul>
+
+
+<h3>5. gdb</h3>
+
+<hr />
+
+<h4>when</h4>
+
+<h4>how</h4>
+
+<h3>6. systemTap</h3>
+
+<hr />
+
+<h4>when</h4>
+
+<h4>how</h4>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -326,6 +728,10 @@ dump memory mem.bin 0x00007f8b00000000 0x00007f8b00000000+65512
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/03/07/Troubleshooting-tools/">Troubleshooting Tools</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2015/02/02/how-to-deal-with-non-heap-or-native-memory-leak/">How to Deal With Non-heap or Native Memory Leak</a>

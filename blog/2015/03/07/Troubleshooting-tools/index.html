@@ -1,24 +1,98 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[shoyu of lysu]]></title>
-  <link href="http://lysu.github.io/atom.xml" rel="self"/>
-  <link href="http://lysu.github.io/"/>
-  <updated>2015-03-07T20:35:45+08:00</updated>
-  <id>http://lysu.github.io/</id>
-  <author>
-    <name><![CDATA[lysu]]></name>
-    
-  </author>
-  <generator uri="http://octopress.org/">Octopress</generator>
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Troubleshooting Tools - shoyu of lysu</title>
+  <meta name="author" content="lysu">
 
   
-  <entry>
-    <title type="html"><![CDATA[Troubleshooting Tools]]></title>
-    <link href="http://lysu.github.io/blog/2015/03/07/Troubleshooting-tools/"/>
-    <updated>2015-03-07T16:05:00+08:00</updated>
-    <id>http://lysu.github.io/blog/2015/03/07/Troubleshooting-tools</id>
-    <content type="html"><![CDATA[<h3>0. The purpose</h3>
+  <meta name="description" content="0. The purpose There are too many tools for us to track the system problem. It&rsquo;s just like a detector&rsquo;s work, at first, we must find & &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://lysu.github.io/blog/2015/03/07/Troubleshooting-tools">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="shoyu of lysu" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//lib.sinaapp.com/js/jquery/1.9.0/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">shoyu of lysu</a></h1>
+  
+    <h2>only some soy sauce.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:lysu.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Troubleshooting Tools</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-03-07T16:05:00+08:00" pubdate data-updated="true">Mar 7<span>th</span>, 2015</time>
+        
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://lysu.github.io">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h3>0. The purpose</h3>
 
 <hr />
 
@@ -382,198 +456,157 @@ read(0, 0x7f90c0143000, 1024)           = ? ERESTARTSYS (To be restarted if SA_R
 <h4>when</h4>
 
 <h4>how</h4>
-]]></content>
-  </entry>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
   
-  <entry>
-    <title type="html"><![CDATA[How to Deal With Non-heap or Native Memory Leak]]></title>
-    <link href="http://lysu.github.io/blog/2015/02/02/how-to-deal-with-non-heap-or-native-memory-leak/"/>
-    <updated>2015-02-02T00:07:15+08:00</updated>
-    <id>http://lysu.github.io/blog/2015/02/02/how-to-deal-with-non-heap-or-native-memory-leak</id>
-    <content type="html"><![CDATA[<h3>when question occur out of heap</h3>
 
-<hr />
+<span class="byline author vcard">Posted by <span class="fn">lysu</span></span>
 
-<p>This week, I meet two very strange memory problems. Althought they are in different system, they have the same appearance &mdash;&ndash; Java process use much more memory over that JVM option setted.(e.g. Jvm option use 1.5G, but in <code>top</code> command, java consume 2.9G memory).</p>
+      
 
-<h3>direct buffer memory</h3>
 
-<hr />
 
-<p>First system was a data-transfer one. It uses Netty heavily. When get the Heap dump we see many DirectByteBuffer objects, it&rsquo;s one of signals that we have direct buffer memory problem&hellip;then we use java.nio.Bits(<a href="http://stackoverflow.com/questions/3908520/looking-up-how-much-direct-buffer-memory-is-available-to-java">see this</a>) to confirm that direct buffer memory increase quickly when many request came.</p>
 
-<p>At last, we found that netty sender product much requst that over receiver&rsquo;s ability. So, we recheck our netty configuaration, and set <code>WATER_MARK</code> option and check <code>channel.isWritable</code> before write data to confirm that Netty has avalible to handle that request, if not we will try it later. Then direct buffer memory is under our control.</p>
 
-<h3>native memory</h3>
 
-<hr />
 
-<p>The other system was a Lib-scan one. It will scan many <code>.jar</code> file every day.</p>
 
-<p>At first, we try to dump heap many times, but we can not found any footmark in heap dump.</p>
-
-<p>So, we change tool and use <code>pmap -x [pid]</code> and <code>cat /proc/[pid]/smaps</code> to see java memory usage.</p>
-
-<p>First, we see find many big <code>anon</code> blocks using 65500+ memory, like this..</p>
-
-<pre><code>00007f8b00000000   65512   40148   40148 rwx--    [ anon ]
-00007f8b03ffa000      24       0       0 -----    [ anon ]
-00007f8b04000000   65520   59816   59816 rwx--    [ anon ]
-00007f8b07ffc000      16       0       0 -----    [ anon ]
-</code></pre>
-
-<p>Then we using <code>gdb</code> to dump the content of these blocks</p>
-
-<pre><code>gdp -pid [pid]
-
-dump memory mem.bin 0x00007f8b00000000 0x00007f8b00000000+65512
-</code></pre>
-
-<p>Then let it visuable</p>
-
-<pre><code>cat mem.bin | strings
-</code></pre>
-
-<p>It&rsquo;s suprise that the block content is <code>MANIFEST.MD</code> file.. at this time, we start to suspect jar..</p>
-
-<pre><code>pmap -x [pid] | grep '.jar' | sort -k6 | uniq -c
-</code></pre>
-
-<p>After do some statistics,  we found that many scanned jar file using memory more then once and never give back it&hellip;It&rsquo;s the problem.</p>
-
-<p>Then open JVM code &mdash; <code>jdk/src/share/native/java/util/zip/zip_util.c</code> and <code>ZipFile.c</code> will found ZipFile/JarFile will use <code>mmap</code> and only free then when <code>close()</code> be called..</p>
-
-<p>So, after recheck and fix unclosed <code>ZipFile/JarFile</code>.. The problem was solved.</p>
-
-<p>UPDATE: except un-close Jar file, before jdk1.7 URLClassLoader close JarFile lazy also lead mmap leak&hellip; we can use 1.7+ or hack it like this <a href="http://snipplr.com/view/24224/class-loader-which-close-opened-jar-files/">http://snipplr.com/view/24224/class-loader-which-close-opened-jar-files/</a> or try System.gc</p>
-
-<p>UPDATE: the other accessible way may be let JarFile/ZipFile doesn&rsquo;t use mmap&hellip;we can use jvm opt <code>-Dsun.zip.disableMemoryMapping</code> to disable it.<a href="http://www.oracle.com/us/technologies/java/overview-156328.html">http://www.oracle.com/us/technologies/java/overview-156328.html</a></p>
-
-<h3>Summary</h3>
-
-<hr />
-
-<p>Using heap dump, we can find java heap problem, but Java and Java-Libary also have chance to make non-heap memory leak.</p>
-
-<p>When use nio-libary, we must take care the direct memory usage, using nio libary carefully, and should better let <code>java.nio.Bits</code> be monited(also this way is trick.)</p>
-
-<p>In addition to <code>nio</code> problem, mis-used JNI api also lead the non-heap memory leak, too. We should try <code>pmap or /proc/[pid]/smaps</code> to found which jar/lib/stack/file might using much memory..then use <code>gdb</code> to watch content of blocks to help our analysis.</p>
-]]></content>
-  </entry>
   
-  <entry>
-    <title type="html"><![CDATA[Tunning CMS GC]]></title>
-    <link href="http://lysu.github.io/blog/2014/11/23/tunning-cms-gc/"/>
-    <updated>2014-11-23T21:56:35+08:00</updated>
-    <id>http://lysu.github.io/blog/2014/11/23/tunning-cms-gc</id>
-    <content type="html"><![CDATA[<h3>Introduce to CMS Collector</h3>
 
-<hr />
 
-<p>&lsquo;CMS&rsquo;(Concurrent Mark-Sweep) is a gc algorithm that widely used by &lsquo;reponse-time critical&rsquo; application.</p>
+<time datetime="2015-03-07T16:05:00+08:00" pubdate data-updated="true">Mar 7<span>th</span>, 2015</time>
+      
 
-<p>To young generation, minor gc, CMS will stop all application threads too, but &lsquo;ParNew&rsquo; performs scan in multi-threads and scan young generation is quick, because it&rsquo;s small.</p>
-
-<p>To old generation, instead of stopping the application threads during full gc, it take more background threads to periodically scan old generation. application threads only pause when it is realy nesessary. so its overall pause time is mush less than collector like &lsquo;thoughput collector&rsquo;.</p>
-
-<p>The trade-off is CMS will take more CPU usage to drive scan threads. In addition, background scan don&rsquo;t compact old generation, so there will be many fragments in old generation. When CPU is shortage or too fragemented to allocate new object, CMS will trigger full gc to resolve the problem.</p>
-
-<p>CMS is enabled by <code>-XX:+UseConcMarkSweepGC -XX:+UseParNewGC</code>.</p>
-
-<h3>Common attention</h3>
-
-<hr />
-
-<h4>1. Never specify a heap that is larger than physical memory</h4>
-
-<p>it will make system do swap to hard disk, it&rsquo;s very very slow.</p>
-
-<h4>2. Set both initial and max heap size to same value</h4>
-
-<p>it will reduce the heap resize operation, although it will hold bigger heap for it&rsquo;s real needing.</p>
-
-<h4>3. Make a right size Generations</h4>
-
-<p>Heap is divided to many regions as we know. The Larger young generation used, the less chances young gc will occur(although slower). The smaller old generation used more full gcs will take place.</p>
-
-<h4>4. Make Perm Generation doesn&rsquo;t full</h4>
-
-<p>Resizing perm-gen will require a full-gc which is expensive.</p>
-
-<h4>5. Control gc threads number</h4>
-
-<p>set flag <code>-XX:ParallelGCThreads=X</code> will effects the number of threads used for young generation collect and stop-world-phase of old generation. Using more threads will lead to shortern stop time, it&rsquo;s take more CPU usage in consequence.</p>
-
-<h3>Attention for CMS</h3>
-
-<hr />
-
-<h4>1. minor gc</h4>
-
-<p>The bigger young generation, the less gc will occur. The bigger young generation, the longer GC cycles will be take.</p>
-
-<p>Survivor size and tenuring</p>
-
-<p>TLABS..todo.</p>
-
-<h4>2. concurrent cycle detail</h4>
-
-<p>Concurrent cycle will be trigger when it&rsquo;s sufficiently full.</p>
-
-<p>It starts with <code>initial mark phase</code>, which stop application threads to find GC root object in heap.</p>
-
-<p>The next is <code>mark phase</code> that will not stop application and run conncurrent with application</p>
-
-<p>Then <code>preclean phase</code> will concurrent running too, then <code>abortable preclean phase</code> will be taken to wait until the young generation is about 50% full to reduce the posibility for ygc occurs before remark.</p>
-
-<p>Then <code>remark phase</code> will stop application threads again.</p>
-
-<p>The <code>sweep phase</code> will swap concurrently.</p>
-
-<p>Concurrent cycle doesn&rsquo;t collect young generation directly, but it will have at least one ygc because of abortable preclean phase.</p>
-
-<h4>3. CMS failure</h4>
-
-<h5>a. concurrent mode failure</h5>
-
-<p>When ygc occurs and no enough room in old generaition for promoted objects. CMS will trigger a full gc.</p>
-
-<h5>b. promotion fail for too fragements</h5>
-
-<p>When ygc occur, but old-gen is too fragements for promented objects. in the middle of ygc(ParNew) will collect and compact entrie old generation, It will take much time then concurrent mode failure, because compact is expensive.</p>
-
-<h5>c. full gc without concurrent failure</h5>
-
-<p>Normally, CMS will never meet full gc, expect concurrent failure or too fragements, but when perm-gen full, will take full gc, too. so take care of PerGen.</p>
-
-<h5>d. a race</h5>
-
-<p>When old-gen was filled for <code>CMSInitiatingOccupancyFraction</code>(default 70%) percent, concurrent cycle start a race, CMS must complete scan and free object befor remainder(100% &ndash; CMSInitiatingOccupancyFraction) be filled up. If not will meet a concurrent mode failure..</p>
-
-<h4>4. Solve concurrent failure problem</h4>
-
-<h5>a. run concurrent cycle more often</h5>
-
-<p>Set <code>-XX:+UseCMSInitiatingOccupancyOnly</code> and <code>-XX:CMSInitiatingOccupancyFraction=N</code> will control the time for cycle start.</p>
-
-<p>Small CMSInitiatingOccupancyFraction value will let cycle start sooner. But too small value will let concurrent cycle consume much CPU time, and start time become uncontrol when CPU resource is shortage; and so much concurrent cycle may take overall pause time increased.</p>
-
-<h5>b. run concurrent cycle more quick</h5>
-
-<p>Set <code>-XX:ConcGCThreads=N</code> will control the threads to run cycle. the more threads the quick cycle will have, as well as more CPU usage.</p>
-
-<p>If concurrent mode failure doesn&rsquo;t often take, set less value will save our CPU resouce.</p>
-
-<h4>5. CMS PermGen</h4>
-
-<p>PermGen will not be collect by default when using CMS.</p>
-
-<p>By set <code>-XX:CMSPermGenSweepingEnable</code> and <code>-XX:CMSClassUnloadingEnable</code> will let cms threads to collect PermGen and free class metadata.</p>
-
-<h4>6. Use G1</h4>
-
-<p>If u are using big heap and fragement problem disturb u, G1 is valuable to explore.</p>
-]]></content>
-  </entry>
+<span class="categories">
   
-</feed>
+    <a class='category' href='/blog/categories/os/'>os</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/02/02/how-to-deal-with-non-heap-or-native-memory-leak/" title="Previous Post: How to deal with non-heap or native memory leak">&laquo; How to deal with non-heap or native memory leak</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/03/07/Troubleshooting-tools/">Troubleshooting Tools</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/02/02/how-to-deal-with-non-heap-or-native-memory-leak/">How to Deal With Non-heap or Native Memory Leak</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/11/23/tunning-cms-gc/">Tunning CMS GC</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/lysu">@lysu</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'lysu',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - lysu -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'lysuzz';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://lysu.github.io/blog/2015/03/07/Troubleshooting-tools/';
+        var disqus_url = 'http://lysu.github.io/blog/2015/03/07/Troubleshooting-tools/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
