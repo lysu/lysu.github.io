@@ -4,7 +4,7 @@
   <title><![CDATA[shoyu of lysu]]></title>
   <link href="http://lysu.github.io/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
-  <updated>2015-03-14T21:57:41+08:00</updated>
+  <updated>2015-03-14T23:21:00+08:00</updated>
   <id>http://lysu.github.io/</id>
   <author>
     <name><![CDATA[lysu]]></name>
@@ -12,6 +12,161 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Introduce to Gdb]]></title>
+    <link href="http://lysu.github.io/blog/2015/03/14/introduce-to-gdb/"/>
+    <updated>2015-03-14T22:01:22+08:00</updated>
+    <id>http://lysu.github.io/blog/2015/03/14/introduce-to-gdb</id>
+    <content type="html"><![CDATA[<h3>0. Purpose</h3>
+
+<p>I&rsquo;m a freshman to use gdb or c, because I mainly use java, but there is some situation for java programer to use gdb tools to solve problem. So I &lsquo;mark&rsquo; this article~</p>
+
+<h3>1. Debug Target</h3>
+
+<p>gdb could debug many kinds of programming languages, like c, c++, objective-c, and so on. It doesn&rsquo;t like debug tools in java, we often use it&rsquo;s command-line interface instead of GUI.</p>
+
+<p>Before we start to debug, we should take code compile with debug information.</p>
+
+<p>for example, using <code>gcc</code> we should add <code>-g</code> flag</p>
+
+<pre><code>$ gcc example.c -g -o example
+</code></pre>
+
+<p>This is the reason why if we want to debug jvm, we must build it with debug info first.</p>
+
+<h3>2. Run as debug</h3>
+
+<p>using</p>
+
+<pre><code>$ gdb ./example
+</code></pre>
+
+<p>then we enter the gdb-commandline, and we can use <code>tab</code> key to complete or list all command</p>
+
+<p>there are some basic command</p>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th> command</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td> dir [directories]</td>
+<td> set source code folder </td>
+</tr>
+<tr>
+<td></td>
+<td> r </td>
+<td> run it </td>
+</tr>
+<tr>
+<td></td>
+<td> b [where] </td>
+<td> add a break, where is an express like &lsquo;xx_method&rsquo; or linenum </td>
+</tr>
+<tr>
+<td></td>
+<td> b [where] if [condition] </td>
+<td> break when condition </td>
+</tr>
+<tr>
+<td></td>
+<td> l </td>
+<td> list code </td>
+</tr>
+<tr>
+<td></td>
+<td>step </td>
+<td> step into a method </td>
+</tr>
+<tr>
+<td></td>
+<td>c</td>
+<td> continue </td>
+</tr>
+<tr>
+<td></td>
+<td>finish</td>
+<td> finish current method </td>
+</tr>
+<tr>
+<td></td>
+<td>p [var name]</td>
+<td>watch a variable value </td>
+</tr>
+<tr>
+<td></td>
+<td>x/? [address] </td>
+<td> watch the memory address </td>
+</tr>
+<tr>
+<td></td>
+<td>dump memory [file] [sadd] [eadd] </td>
+<td> dump memory between to address into file </td>
+</tr>
+<tr>
+<td></td>
+<td>info thread </td>
+<td> list threads </td>
+</tr>
+<tr>
+<td></td>
+<td>info break </td>
+<td> list all break </td>
+</tr>
+<tr>
+<td></td>
+<td>thread [tid]</td>
+<td> switch thread </td>
+</tr>
+<tr>
+<td></td>
+<td>bt </td>
+<td> show stacktrace </td>
+</tr>
+<tr>
+<td></td>
+<td>[enter]</td>
+<td> redo last command </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>and so on&hellip;</p>
+
+<h3>2. Attach to running process</h3>
+
+<p>using</p>
+
+<pre><code>$ gdb ./example [pid]
+</code></pre>
+
+<p>to attach to pid process..</p>
+
+<h3>3. Run with coredump file</h3>
+
+<p>using</p>
+
+<pre><code>$ gdb ./example [coredump file path]
+</code></pre>
+
+<p>the <a href="http://lysu.github.io/blog/2015/03/07/Troubleshooting-tools/">previous blog</a> tell some detail of debug coredump file.</p>
+
+<p>Also see</p>
+
+<ul>
+<li><a href="http://blog.csdn.net/haoel/article/details/2879">GDB调试程序</a></li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Troubleshooting Tools]]></title>
