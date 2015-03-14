@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Os | shoyu of lysu]]></title>
   <link href="http://lysu.github.io/blog/categories/os/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
-  <updated>2015-03-07T20:35:45+08:00</updated>
+  <updated>2015-03-14T21:57:41+08:00</updated>
   <id>http://lysu.github.io/</id>
   <author>
     <name><![CDATA[lysu]]></name>
@@ -366,22 +366,6 @@ read(0, 0x7f90c0143000, 1024)           = ? ERESTARTSYS (To be restarted if SA_R
 <li><a href="http://lwn.net/Articles/475406/">CGroup Task Counter</a></li>
 </ul>
 
-
-<h3>5. gdb</h3>
-
-<hr />
-
-<h4>when</h4>
-
-<h4>how</h4>
-
-<h3>6. systemTap</h3>
-
-<hr />
-
-<h4>when</h4>
-
-<h4>how</h4>
 ]]></content>
   </entry>
   
