@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: Os, | shoyu of lysu]]></title>
+  <title><![CDATA[Category: os, | shoyu of lysu]]></title>
   <link href="http://lysu.github.io/blog/categories/os/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
-  <updated>2015-03-14T23:26:18+08:00</updated>
+  <updated>2015-03-14T23:33:05+08:00</updated>
   <id>http://lysu.github.io/</id>
   <author>
     <name><![CDATA[lysu]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Introduce to Gdb]]></title>
+    <title type="html"><![CDATA[Introduce to gdb]]></title>
     <link href="http://lysu.github.io/blog/2015/03/14/introduce-to-gdb/"/>
     <updated>2015-03-14T22:01:22+08:00</updated>
     <id>http://lysu.github.io/blog/2015/03/14/introduce-to-gdb</id>

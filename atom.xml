@@ -4,7 +4,7 @@
   <title><![CDATA[shoyu of lysu]]></title>
   <link href="http://lysu.github.io/atom.xml" rel="self"/>
   <link href="http://lysu.github.io/"/>
-  <updated>2015-03-14T23:26:18+08:00</updated>
+  <updated>2015-03-14T23:33:05+08:00</updated>
   <id>http://lysu.github.io/</id>
   <author>
     <name><![CDATA[lysu]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Introduce to Gdb]]></title>
+    <title type="html"><![CDATA[Introduce to gdb]]></title>
     <link href="http://lysu.github.io/blog/2015/03/14/introduce-to-gdb/"/>
     <updated>2015-03-14T22:01:22+08:00</updated>
     <id>http://lysu.github.io/blog/2015/03/14/introduce-to-gdb</id>
@@ -169,7 +169,7 @@
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[Troubleshooting Tools]]></title>
+    <title type="html"><![CDATA[Troubleshooting tools]]></title>
     <link href="http://lysu.github.io/blog/2015/03/07/Troubleshooting-tools/"/>
     <updated>2015-03-07T16:05:00+08:00</updated>
     <id>http://lysu.github.io/blog/2015/03/07/Troubleshooting-tools</id>
@@ -525,7 +525,7 @@ read(0, 0x7f90c0143000, 1024)           = ? ERESTARTSYS (To be restarted if SA_R
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[How to Deal With Non-heap or Native Memory Leak]]></title>
+    <title type="html"><![CDATA[How to deal with non-heap or native memory leak]]></title>
     <link href="http://lysu.github.io/blog/2015/02/02/how-to-deal-with-non-heap-or-native-memory-leak/"/>
     <updated>2015-02-02T00:07:15+08:00</updated>
     <id>http://lysu.github.io/blog/2015/02/02/how-to-deal-with-non-heap-or-native-memory-leak</id>
