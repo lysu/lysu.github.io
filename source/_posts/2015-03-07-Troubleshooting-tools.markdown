@@ -270,25 +270,3 @@ Also see:
 
 - [CGroup Task Counter](http://lwn.net/Articles/475406/)
 
-### 5. gdb
----
-
-#### when
-
-
-#### how
-
-### 6. systemTap
----
-
-#### when
-
-
-#### how
-
-
-
-
- 
-
-    
