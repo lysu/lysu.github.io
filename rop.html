@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Ruminations on proxy</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="created" content="2018-04-25T15:00:22+0800"/>
+        <meta name="modified" content="2018-04-26T16:28:32+0800"/>
+        <meta name="tags" content=""/>
+        <meta name="last device" content="li’s MacBook Pro"/>
+    </head>
+    <body>
+        <div class="note-wrapper">
+            <h1>Ruminations on proxy</h1>
+<p><i>by 苏立 Apr 25, 2018</i></p>
+<br>
+<h2>Abstract</h2>
+<p>在过去的两年半里, 我分别在两家公司, 投入接近两年时间全力独立设计编写了两个基于tcp的proxy应用: 一个数据库中间件dbproxy，一个iot gateway. 两个项目从业务虽然有较大差异, 但技术上有通性的地方, 因为之前从未做过类似项目, 自己投入挺多时间从0学习了很多新知识并在项目中成功应用. 所以本文将尝试一起总结下两个项目自己觉得收获和不足待可改进的地方.</p>
+<br>
+<h2>Introduce</h2>
+<p>首先简单介绍下两个项目基本业务和逻辑, 帮助我们快速了解项目需求和整体架构.(发现写的有点多好像不是简单介绍了- -)</p>
+<br>
+<h3>dbproxy</h3>
+<p>之前公司初期有大量的php遗留系统, php中很难做连接池,  除了这个强需求外,  如果我们有了proxy，可以在mysql上游方面做很多<a href="https://github.com/vitessio/vitess">类似其他proxy一样的cool事情</a>,  最理想最终构建一个mysql上”用户感觉像单机一样”的分布式mysql数据库(- - 当然这需要配合mysql本身改造和下游设施改造, 我也花了部分精力尝试了解下游binlog和mysqlserver本身, 并且这是我的长期目标哈), 对于之前公司的规模看,  自研并且能持续改进升级是不错的选择, 所以使用纯c编写了一个mysql proxy, 目标是接收业务mysql请求, 并根据规则高效分派到后端mysql上运行并在结束后返回结果给业务</p>
+<br>
+<h4>业务模型</h4>
+<p>从业务和整体角度是这样的:</p>
+<p><img src='Ruminations%20on%20proxy/IMG_0076.PNG'></p>
+<ul><li>对外通过实现mysql协议(<a href="https://dev.mysql.com/doc/internals/en/client-server-protocol.html">官方文档</a>, <a href="https://github.com/lysu/mysql-server/blob/3d70e802c4650c93d5a69c1ebd477b40a94d6d1f/sql/protocol_classic.cc">mysql源码实现</a>), 伪装成一个mysql服务器完成身份校验并开始接收业务请求(保证使用普通任意mysql客户端可以连上)
+</li><li>收到客户端端command请求后解析包头type,  首先根据type判断是可以在proxy处理的命令？ 还是需要转发的(正常的query和execute)的命令?因为从前面协议文档可以看到协议挺复杂并非单纯转发即可，一个可用的mysql proxy需要搞定带状态的部分指令
+</li><li>对于第一种情况, 如果是proxy本身需要care的type, 比如: 可以直接返回的ping等 / 需要暂时缓存的prepare or begin / 改变proxy状态的某些set变量等,  则会在proxy做处理或缓存, 其实这部分维护状态是整个proxy比较复杂细节但让业务感觉”和mysql一样”的关键
+</li><li>对于第二种情况，如果是正常转发的query或execute/commit(后两个会带出之前缓存在proxy的一组命令)命令, 则会查看路由配置信息如果目标被proxy的集群有分片则会用parser解析找到确定分片mysql集群(每个集群都是1主多从)，而如果配置的是非分片的后端忽略parser则确定目标mysql集群; 确定目标分片集群后根据当前是读还是写并考虑事务上下文hint确定是将sql转集群中的master还是多个slave中的一个(这里涉及一个load balancer的过程)
+</li><li>如果是分片带分表的话, 会根据hint利用sql parser出的的ast做表表名rewrite生成新sql
+</li><li>确定后端机器后会从维护的连接池中获取空闲连接，如果没有空闲连接则发起异步新建一个(同时等待连接池别人返回的)，并保证对mysql完成正常校验握手才算真正建立
+</li><li>获取后端连接后在用标准的mysql协议发给mysql-server，并异步等待返回，因为返回数据可能较大，会采用分段多次转发的方式完成从后端连接到客户连接的数据搬运, 完成后继续等待下一个客户请求(mysql的client-server没有piplining功能)
+</li></ul>
+<br>
+<h4>连接处理</h4>
+<p>从技术上我们使用Pure C实现, 通过线程的实现了类似nginx的acceptor-worker的模型(ng是进程, dbproxy是线程)，整个proxy是基于epoll多路复用的的无阻塞的处理, 因为是转发只没有过多的线程只有Nworkers+1accepter+1statistic个线程.</p>
+<p><img src='Ruminations%20on%20proxy/IMG_0077.PNG'></p>
+<ul><li>首先main启动后会读取配置, 并创建好一个acceptor线程对外监听端口, 并通过epoll监听新连接, 等待客户端请求
+</li><li>创建n个worker线程并暴露一个pipe给acceptor线程用于分发, 每个worker有自己维护一个epoll eventloop并监听pipe
+</li><li>acceptor收到监听fd事件后会<code class='code-inline'>accept</code>出clientFd并通过pipe round-robin分发给worker线程
+</li><li>worker收到将新fd加入自己的本线程的eventloop, 并开始触发客户端校验和后续收命令逻辑, 后续这个客户端连接的所有请求都会被这个固定的worker处理.
+</li><li>对于被代理的mysql会首先尝试从一个共享的线程池中获取连接,  如果没有空闲则会通过当前线程的epoll建立一个新连接,  并加入当前线程eventloop； 如果能直接从池子中获取, 则需要判断是否和还回去是一个线程，如果不是则需要从老eventloop移除，加入当前线程的eventloop;后面会在提到这个连接池，需要注意连接并非随意可复用，不同权限不同capacity的连接不能串
+</li><li>后续write和等mysql-server返回通过和前端连接所处的同一个eventloop中异步完成分段多次转发
+</li></ul>
+<br>
+<h4>代码模型</h4>
+<p>从逻辑上打平了的每个worker处理逻辑可以理解为这样…</p>
+<p><img src='Ruminations%20on%20proxy/97580A6A-762E-499F-9484-C89193F919C1.png'></p>
+<p>因为使用纯c和阻塞方式编写, 所以代码结构是大量回调的, 从逻辑上看就是一个死循环不停的<code class='code-inline'>epoll_wait</code>然后处理弹出的事件并根据连接状态机进行处理逻辑分发，处理完了再设法返回到开始那个<code class='code-inline'>epoll_wait</code>的地方继续处理其他事件(ps: epoll使用的是level-trigger编写上性对容易)，虽然逻辑上是这样但要做一个可维护的系统肯定需要根据逻辑进行一些合理建模来让人更容易理解并方便未来修改, 当时自己刚开始学c，在业余周末花时间学习了c和linux，外自己也花了点时间研究了下nginx，希望看看别人怎么组织一个经典的c程序- -</p>
+<br>
+<p>开始第一版打算裸写epoll，但后来上线前换用libevent(只用了libevent中薄封装<code class='code-inline'>event_base</code>那层(基本和epoll类似用起来)和timer(timer代码实现和nginx很像红黑树维护可以减少没必要的epoll弹出), 没有用比较highlevel的buffer那套), 但代码结构还是各种回调, 不过我还是尝试在可维护性上做了一些努力, 虽然是Pure C, 我还是尝试用类似OO的方式来组织代码(一个struct和围绕struct的一堆方法), 主要的domain model有:</p>
+<br>
+<ul><li>cycle: 线程对象维护一些处理线程相关的变量(从nginx代码里学的😆)
+</li><li>acceptor/auth: 对前端完成新建连接接收和鉴权认证
+</li><li>front_connection: 上游连接相关属性,方法的封装
+</li><li>back_connection: 下游连接相关属性, 方法的封装(其实和上面的扩展, c没继承我用类似组合做复用)
+</li><li>conn_pool: 共享连接池, 逻辑上是一个key->stack的映射, 但key记得比较复杂是一个多维的组合, 大概是”集群+用户+加链接特性+主库or从库”来决定stack, 因为同一个集群的连接如果是不同权限用户不能复用, 连接特性主要是found_row, multi_query, ignore_space如果不同也不能串…这是mysql proxy比较细节但关键的地方
+</li><li>core: main方法串联上诉流程并执行一些proxy本身的维护指令
+</li><li>其他还有些类似: config, parser, router, log等围绕connection处理模块
+</li></ul>
+<br>
+<p>每个模块都是一个自己的<code class='code-inline'>.h</code>和<code class='code-inline'>.c</code>，并都内聚的围绕domain model struct维护一组展开的方法(当然不可避免的处理完后一直return回eventloop的逻辑), 这几个module(文件)间的逻辑可以理解为这样(acceptor其实本身也是一个特殊的cycle)</p>
+<p><img src='Ruminations%20on%20proxy/IMG_0079.PNG'></p>
+<br>
+<h4>小结</h4>
+<p>这个项目是我第一用纯c编写大型程序, 编码主要就我一个人, 不过我leader之前在baidu也是搞dbproxy的他给了我很多指导并帮我review, 特别是proxy本身对prepare<i>事务</i>set还有连接能否复用之类的细节经验让我少走了很多弯路, 而这个项目感觉业务上最复杂也就是这些边角细节的处理同时也是决定最终效果的关键因素(虽然还没引入聚合或分布式事务单纯做简单Partition和读写分离也有很多细节因为mysql本身交互是上下文状态的); 另外就是自己努力尝试将回调代码在不引入future或coroutine的情况下尽量易维护变更(从后续新同学接手反馈看不错)</p>
+<br>
+<h3>长连接gateway</h3>
+<p>需要和客户端保持长连接,  主要功能是客户端能复用保持的连接向上PubUp信息, 而业务能通过保持的长连接可靠下推消息, 从而满足公司业务上对大量线下设备业务的控制和上报需求. 在长远设计中gateway未来可以供给手机客户端来代理所有手机app上下行流量.</p>
+<br>
+<p>因为公司主要以java技术栈为主, 所以主要使用java实现(虽然我研了淘宝, 腾讯等类似长连接方案都是c++但自己还是有信心能实现满足性能较好的java长连接),  基于java里最流行的网络框架netty实现，但非黑盒使用, 研究了很多netty源码并参考了之前dbproxy的思想保证高效接近c的模式</p>
+<br>
+<p>协议上我们选择在tcp上实现一个自定义的二进制协议(packet结构: type bit + len of len bit + len bytes + playload bytes + checksum byte，然后type是更精简MQTT的handshake, pub, ack, ping, rst五语义)</p>
+<br>
+<h4>模块交互</h4>
+<p>相比之前我对gateway根据功能职责划分了多个子模块，每个模块都可以根据负载独立部署(其中核心模块应该减少发布导致的断线可能)</p>
+<br>
+<p><img src='Ruminations%20on%20proxy/644B98C1-0751-434C-BEBF-C6F7AD2ABB95.png'></p>
+<br>
+<br>
+<h5>Connsrv 接入模块</h5>
+<p>负责保持和设备的链接。维护和设备的链接信息并注册到router；转发设备的上行的数据到后dispatcher模块；转发pusher下推请求到目标设备链接；对外和对内都暴露TCP协议的服务.</p>
+<br>
+<ol start="1"><li>建立链接， connsrv可以部署通过部署多个进行横向扩展, 设备目前通过4层lvs对建立链接操作分发到多个Connsrv(目前分发策略是RoundRobin)并在对应的Connsrv上建链成功后设备会一直保持和Connsrv的链接，在链接中断前后续下推或上发都只会通过这台Connsrv进行。
+</li><li>握手校验， 设备建立tcp链接成功后会发起Handshake1请求, 收到handshake1后connsrv会做校验设备, 并注册到router模块, 并返回Handshake2到设备通知设备握手成功，并告知会话密钥，之后就可以传输和接收下推数据了
+</li><li>转发设备上行数据，设备上行数据是加密，会根据使用对应的会话密钥解密后，稍作封装转发到dispatcher模块，并转发dispatcher返回的ack数据回设备
+</li><li>转发push下推数据，通过内存中本地会话找到对应的链接，加密并转发下推的数据
+</li><li>链接中断，connsrv会向router解注册全局会话信息，从而让大家都知道这个设备已经下线
+</li></ol>
+<br>
+<h5>Router 路由模块</h5>
+<p>负责维护所有接入设备的会话路由信息，实现上本质是对redis的封装，但未来HA可以同时使用多种存储- -; 对外暴露都是异步的dubbo服务</p>
+<br>
+<ol start="1"><li>注册设备， 保存设备会话(uuid, connsrv-host, inflight, lastTs, ghost-flag)到redis
+</li><li>下线设备， 设置设备会话过期时间，等待过期
+</li><li>剔除设备， A设备已通过Connsrv1注册, A设备再次通过Connsrv2注册时，Router需要向Connsrv1主动踢掉设备A在Connsrv1的本地会话, 这个逻辑通过router模块完成, 因为是分布式系统操作可能会不成功并导致重复连接，但最终通过补偿和idle超时可以保证最长1s后router数据恢复准确
+</li></ol>
+<br>
+<h5>Pusher 下推模块</h5>
+<p>负责接收业务的下推请求，对外暴露dubbo接口， 对内暴露TCP接口, 完成</p>
+<br>
+<ol start="1"><li>接收下推消息dubbo请求，接收业务发起的dubbo调用，向router查找设备会话，根据会话中的inflight信息决定下推飞行窗口大小， 并根据下推消息的QoS判断是否持久化消息到mysql
+</li><li>根据router模块设备会话中的connsrv-host，下推请求到对应的connsrv服务器
+</li><li>如果是Qos=1的消息接受通过TCP协议接收下推反馈(feedback)和确认(ack), 更新mysql状态
+</li><li>运行定时任务1s一次扫描mysql中重发推送失败和超时未反馈/确认的消息
+</li></ol>
+<br>
+<h5>Dispatcher 分发模块</h5>
+<p>负责接受connsrv转发上来的设备上报请求信息， 并转发到mq中供业务获取; 对内提供TCP协议，对外提供MQ服务</p>
+<br>
+<ol start="1"><li>接受connsrv的上报数据，根据wconfig配置的product->topic映射，转发消息到mq的对应topic
+</li><li>发送消息成功，后如果是Qos1上报消息，会向connsrv反馈ack，ack之后会通过connsrv反馈回设备
+</li></ol>
+<br>
+<h4>连接处理</h4>
+<br>
+<p>[gateway线程]</p>
+<br>
+<p>这里主要对比介绍下gateway中connsrv的线程模型，因为使用netty，netty里线程模型也是典型的acceptor-worker模式,  所以连接管理流程和dbproxy非常像- -，但因为是长连接服务connsrv需要维护一个前端所有设备连接的映射, 对后端服务(这里是dispatcher模块)也会保持连接池, 但gateway里不在做分worker的连接池，这样避免了对连接池的锁竞争和频繁增减eventloop的系统调用.</p>
+<br>
+<h4>代码模型</h4>
+<p>在netty本质也是对epoll的封装(我使用的是<a href="https://github.com/netty/netty-tcnative">netty-native-port</a>用c基于epoll edge trigger实现), 没用java的nio), 所以核心也是单线程的eventloop，但对于处理netty使用了pipline的pattern，弹出的事件会被一串handler顺序处理.</p>
+<br>
+<p>我编写了自定义一组handler: logger, idleCheck, keepHeartbeat, packetEncoder, packetDecoder 和 最终的 业务处理handler， 在epoll弹出读事件后netty会读取网络包到buffer并顺序通过上述handler， 举个例子: decoder一样也会完成粘包如果没读全继续return继续等后续包等逻辑, 最终到达业务handler得到的入参就是一个实际的class对象, 相比之前c写的dbproxy，对于连接检查，日志，还有编解码模块更加单一职责，感觉更优雅.</p>
+<br>
+<p>[gateway pipeline]</p>
+<br>
+<p>主要模型有:(设计即代码代码里也有对应类)</p>
+<br>
+<p>[gateway代码]</p>
+<br>
+<ul><li>downstream: 客户端简历的连接会被封装为一个downstream对象, 用于管理连接状态并本身作为一个业务handler接收netty事件和收到的请求
+</li><li>commandProcessor: upstream会通过一个cmdType->processor的注册表来找到具体的处理processor，相比dbproxy的switch更oo一些, processor进行业务处理，并返回future， 通过future一定程度上减少了设法让代码回到eventloop的脑力消耗更加专注于业务逻辑
+</li><li>adaptor: 会负责服务发现上有的cluster的地址并完成负载均衡找到其中某node
+</li><li>upstreamPool: 后端连接池，相比dbproxy这个pool是threadloacal的可以无锁操作的连接池, 也不需要做跨eventloop使用连接时的2次繁重的系统调用
+</li><li>upstream: 是具体后端连接对象，这里封装了上游连接的状态, 并也作为一个业务handler处理netty传过来的各种事件处理回调, 并支持像后端异步建立连接，写数据，收返回数据
+</li></ul>
+<br>
+<p>每个模块都是一个独立的java类, 围绕downstream和upstream根据指令注册一组processor相比上次感觉代码更加清晰</p>
+<br>
+<h2>Interesting detail</h2>
+<p>本节进入主题看下两个proxy中自己觉得挺有意思的细节设计, 特别是第二次中对之前的改进优化</p>
+<br>
+<h3>内存分配</h3>
+<p>作为proxy完成的核心任务就是对两端socket的数据转发, 利用epoll和无阻塞io并控制有效线程数能充分利用cpu，系统瓶颈就更多会在内存操作上，首先频繁的内存分配会一定程度的阻塞cpu(kernel在实际分配页是阻塞的), 另外多线程分配也会在kernel有竞争阻塞条件，最后在第二个io gateway中因为是使用jvm这样带gc的虚拟机上语言, 对于大量数据分配后的回收压力也会消耗大量cpu，同时内存本身限制也容易成为系统crash的风险条件, 其中我们主要关注下用于转移数据buffer的分配逻辑</p>
+<br>
+<p>首先, 先看下dbproxy，因为是c程序, 需要自己管理释放内存, 对于需要分配的buffer内存</p>
+<br>
+<br>
+<br>
+
+        </div>
+        <script type="text/javascript">
+            (function() {
+
+    var doc_ols = document.getElementsByTagName("ol");
+
+    for ( i=0; i<doc_ols.length; i++) {
+
+        var ol_start = doc_ols[i].getAttribute("start") - 1;
+        doc_ols[i].setAttribute("style", "counter-reset:ol " + ol_start + ";");
+
+    }
+
+})();
+        </script>
+        <style>
+            html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,menu,nav,output,ruby,section,summary,time,mark,audio,video{margin:0;padding:0;border:0;font:inherit;font-size:100%;vertical-align:baseline}html{line-height:1}ol,ul{list-style:none}table{border-collapse:collapse;border-spacing:0}caption,th,td{text-align:left;font-weight:normal;vertical-align:middle}q,blockquote{quotes:none}q:before,q:after,blockquote:before,blockquote:after{content:"";content:none}a img{border:none}article,aside,details,figcaption,figure,footer,header,hgroup,main,menu,nav,section,summary{display:block}*{-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box}html{font-size:87.5%;line-height:1.57143em}html{font-size:14px;line-height:1.6em;-webkit-text-size-adjust:100%}body{background:#fcfcfc;color:#545454;text-rendering:optimizeLegibility;font-family:"AvenirNext-Regular"}a{color:#de4c4f;text-decoration:none}h1{font-family:"AvenirNext-Medium";color:#333;font-size:1.6em;line-height:1.3em;margin-bottom:.78571em}h2{font-family:"AvenirNext-Medium";color:#333;font-size:1.3em;line-height:1em;margin-bottom:.62857em}h3{font-family:"AvenirNext-Medium";color:#333;font-size:1.15em;line-height:1em;margin-bottom:.47143em}p{margin-bottom:1.57143em;hyphens:auto}hr{height:1px;border:0;background-color:#dedede;margin:-1px auto 1.57143em auto}ul,ol{margin-bottom:.31429em}ul ul,ul ol,ol ul,ol ol{margin-bottom:0px}ol li:before{content:counter(ol) ".";counter-increment:ol;color:#e06e73;text-align:right;display:inline-block;min-width:1em;margin-right:0.5em}b,strong{font-family:"AvenirNext-Bold"}i,em{font-family:"AvenirNext-Italic"}code{font-family:"Menlo-Regular"}.text-overflow-ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sf_code_syntax_string{color:#D33905}.sf_code_syntax_comment{color:#838383}.sf_code_syntax_documentation_comment{color:#128901}.sf_code_syntax_number{color:#0E73A2}.sf_code_syntax_project{color:#5B2599}.sf_code_syntax_keyword{color:#0E73A2}.sf_code_syntax_character{color:#1B00CE}.sf_code_syntax_preprocessor{color:#920448}.note-wrapper{max-width:46em;margin:0px auto;padding:1.57143em 3.14286em}.note-wrapper.spotlight-preview{overflow-x:hidden}u{text-decoration:none;background-image:linear-gradient(to bottom, rgba(0,0,0,0) 50%,#e06e73 50%);background-repeat:repeat-x;background-size:2px 2px;background-position:0 1.05em}s{color:#878787}p{margin-bottom:0.1em}hr{margin-bottom:0.7em;margin-top:0.7em}ul li{text-indent:-0.35em}ul li:before{content:"•";color:#e06e73;display:inline-block;margin-right:0.3em}ul ul{margin-left:1.25714em}ol li{text-indent:-1.45em}ol ol{margin-left:1.25714em}blockquote{display:block;margin-left:-1em;padding-left:0.8em;border-left:0.2em solid #e06e73}.todo-list ul{margin-left:1.88571em}.todo-list li{text-indent:-1.75em}.todo-list li:before{content:"";display:static;margin-right:0px}.todo-checkbox{text-indent:-1.7em}.todo-checkbox svg{margin-right:0.3em;position:relative;top:0.2em}.todo-checkbox svg #check{display:none}.todo-checkbox.todo-checked #check{display:inline}.todo-checkbox.todo-checked .todo-text{text-decoration:line-through;color:#878787}.code-inline{display:inline;background:white;border:solid 1px #dedede;padding:0.2em 0.5em;font-size:0.9em}.code-multiline{display:block;background:white;border:solid 1px #dedede;padding:0.7em 1em;font-size:0.9em;overflow-x:auto}.hashtag{display:inline-block;color:white;background:#b8bfc2;padding:0.0em 0.5em;border-radius:1em;text-indent:0}.hashtag a{color:#fff}.address a{color:#545454;background-image:linear-gradient(to bottom, rgba(0,0,0,0) 50%,#0da35e 50%);background-repeat:repeat-x;background-size:2px 2px;background-position:0 1.05em}.address svg{position:relative;top:0.2em;display:inline-block;margin-right:0.2em}.color-preview{display:inline-block;width:1em;height:1em;border:solid 1px rgba(0,0,0,0.3);border-radius:50%;margin-right:0.1em;position:relative;top:0.2em;white-space:nowrap}.color-code{margin-right:0.2em;font-family:"Menlo-Regular";font-size:0.9em}.color-hash{opacity:0.4}.ordered-list-number{color:#e06e73;text-align:right;display:inline-block;min-width:1em}.arrow svg{position:relative;top:0.08em;display:inline-block;margin-right:0.15em;margin-left:0.15em}.arrow svg #rod{stroke:#545454}.arrow svg #point{fill:#545454}mark{color:inherit;display:inline-block;padding:0px 4px;background-color:#fcffc0}img{max-width:100%;height:auto}
+
+        </style>
+    </body>
+</html>
